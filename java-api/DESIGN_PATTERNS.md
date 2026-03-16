@@ -21,6 +21,52 @@ flowchart TB
     HC --> MON[MonitoringService\nAggregated Health]
 ```
 
+## Class Diagram
+
+```mermaid
+classDiagram
+    class HttpServiceClient {
+        <<abstract>>
+        +executeOrThrow(request, integrationName)
+        +isReachable(request)
+    }
+
+    class AirflowService
+    class AtlasService
+    class MlflowService
+    class CiService
+
+    class IntegrationException
+    class UpstreamServiceException
+    class IntegrationConnectivityException
+
+    class ApiExceptionHandler
+
+    class WorkflowController
+    class MonitoringController
+
+    WorkflowController --> AirflowService
+    WorkflowController --> AtlasService
+    WorkflowController --> MlflowService
+    WorkflowController --> CiService
+    MonitoringController --> AirflowService
+    MonitoringController --> AtlasService
+    MonitoringController --> MlflowService
+    MonitoringController --> CiService
+
+    HttpServiceClient <|-- AirflowService
+    HttpServiceClient <|-- AtlasService
+    HttpServiceClient <|-- MlflowService
+    HttpServiceClient <|-- CiService
+
+    IntegrationException <|-- UpstreamServiceException
+    IntegrationException <|-- IntegrationConnectivityException
+
+    ApiExceptionHandler ..> IntegrationException : maps to API problem
+```
+
+The class diagram is intentionally selective. It shows the template-method inheritance chain, the integration exception hierarchy, and the main controller-to-service relationships without trying to document every DTO or Spring bean.
+
 ## 1) Layered Architecture
 
 Intent:

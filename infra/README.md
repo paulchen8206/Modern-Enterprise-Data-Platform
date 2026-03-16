@@ -32,24 +32,11 @@ This folder centralizes container definitions for the Modern Data Stack.
   - `postgres_data`
   - `postgres_conduktor_data`
 
-## Operational Workflow
+## Ownership Boundaries
 
-Use Make targets as the primary interface for day-to-day operations:
-
-```bash
-make up
-make ps
-make logs
-make down
-make clean
-make validate-compose
-```
-
-Direct compose equivalent for the local stack:
-
-```bash
-docker-compose --project-directory . -f infra/compose/docker-compose.yaml up --build -d
-```
+- Use this document for compose file ownership, image build paths, and container inventory.
+- Use `RUNBOOK.md` for startup, shutdown, health checks, and local troubleshooting procedures.
+- Use `docs/DEPLOYMENT.md` for rollout strategy, promotion, and rollback flows.
 
 ## Build and Path Conventions
 
@@ -66,22 +53,4 @@ docker-compose --project-directory . -f infra/compose/docker-compose.yaml up --b
 - `compose/docker-compose.ci.yaml` defines a smaller CI-oriented stack (`airflow`, `kafka`, `spark`, `mongodb`, `hadoop`, `influxdb`).
 - The CI compose file currently references local build contexts (`./airflow`, `./kafka`, `./spark`, `./hadoop`) and should be treated as separate from the default local runtime topology.
 
-## Quick Verification
-
-- Validate compose files:
-
-  ```bash
-  make validate-compose
-  ```
-
-- Check service state after startup:
-
-  ```bash
-  make ps
-  ```
-
-- Tail core logs for triage:
-
-  ```bash
-  make logs
-  ```
+For compose validation and day-to-day verification commands, follow `RUNBOOK.md`.

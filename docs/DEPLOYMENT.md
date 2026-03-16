@@ -56,7 +56,7 @@ This project now includes enterprise-grade deployment capabilities:
 ### System Architecture Diagram
 
 ```mermaid
-graph TB
+flowchart TB
     subgraph TM["Traffic Management"]
         ALB[AWS ALB]
         NI[Nginx Ingress]
@@ -80,92 +80,20 @@ graph TB
     DE --> AM
 ```
 
-### Local Runtime Configuration Diagrams
+### Local Validation Topology
 
-#### Pure Docker Compose (All Services in Compose)
+Deployment strategy documentation no longer duplicates local runtime topology.
 
-```mermaid
-graph LR
-  Host[Host Machine] --> API[workflow-api container]
-  Host --> AF[airflow-webserver]
-  Host --> K[kafka]
-  Host --> M[minio]
-  Host --> PG[postgres]
-  Host --> MY[mysql]
-  Host --> CDK[conduktor]
-
-  API --> AF
-  API --> K
-  API --> M
-  API --> PG
-  API --> MY
-```
-
-#### Kind-Only Local Kubernetes
-
-```mermaid
-graph LR
-  Host[Host Machine] --> Kind[Kind Cluster]
-
-  subgraph Kind
-    K8sAPI[workflow-api pod]
-    K8sAF[airflow-webserver pod]
-    K8sK[kafka pod]
-    K8sM[minio pod]
-    K8sPG[postgres pod]
-    K8sMY[mysql pod]
-  end
-
-  K8sAPI --> K8sAF
-  K8sAPI --> K8sK
-  K8sAPI --> K8sM
-  K8sAPI --> K8sPG
-  K8sAPI --> K8sMY
-```
-
-#### Hybrid (Kind App Stack + Compose Support Services)
-
-```mermaid
-graph LR
-  Host[Host Machine] --> Kind[Kind Cluster]
-  Host --> CPG[postgres-conduktor container]
-  Host --> CUI[conduktor container]
-
-  subgraph Kind
-    HAPI[workflow-api pod]
-    HAF[airflow-webserver pod]
-    HK[kafka pod]
-    HM[minio pod]
-    HPG[postgres pod]
-    HMY[mysql pod]
-  end
-
-  CUI --> CPG
-  CUI --> HK
-  HAPI --> HAF
-  HAPI --> HK
-  HAPI --> HM
-  HAPI --> HPG
-  HAPI --> HMY
-```
-
-#### Java API Runtime Options
-
-```mermaid
-graph TD
-  A[Java API Host Run\nmake run-java-api-local-safe] --> B[Connect to Compose or Kind endpoints]
-  C[Java API Container Run\nmake run-java-api-container] --> D[Compose profile inside workflow-api container]
-
-  B --> E[Best for fast code iteration]
-  D --> F[Best for container parity testing]
-```
+- Use `RUNBOOK.md` for Compose, Kind, hybrid, and Java API runtime diagrams.
+- Use `infra/README.md` for compose file ownership, build contexts, and container layout.
+- Use this document for rollout strategies, analysis flow, promotion, and rollback mechanics.
 
 ### Deployment Flow Diagrams
 
-#### Blue/Green Deployment
+#### Blue/Green Flow
 
 ```mermaid
-graph LR
+flowchart LR
     A[1. Deploy Green<br/>Preview] --> B[2. Run Tests &<br/>Analysis]
     B --> C[3. Manual/Auto<br/>Verification]
     C --> D[4. Switch Traffic<br/>Blue → Green]
@@ -173,10 +101,10 @@ graph LR
     E --> F[6. Decommission<br/>Blue]
 ```
 
-#### Canary Deployment
+#### Canary Flow
 
 ```mermaid
-graph TD
+flowchart TB
     A[1. Deploy Canary] --> B[2. Route 10%<br/>Traffic to Canary]
     B --> C{3. Analysis Pass?}
     C -->|Yes| D[4. Increase to 25%]
@@ -366,16 +294,16 @@ helm upgrade --install modern-data-stack-prd helm/modern-data-stack \
 
 ## Deployment Strategies
 
-### Blue/Green Deployment
+### Blue/Green Rollout Steps
 
-#### Deploy with Script
+#### Scripted Blue/Green Rollout
 
 ```bash
 cd ops
 ./deploy-blue-green.sh airflow v1.0.0
 ```
 
-#### Manual Deployment
+#### Manual Blue/Green Rollout
 
 ```bash
 # Apply rollout manifest
@@ -406,16 +334,16 @@ kubectl port-forward svc/airflow-webserver-preview 8081:8080
 curl http://localhost:8081/health
 ```
 
-### Canary Deployment
+### Canary Rollout Steps
 
-#### Deploy with Script
+#### Scripted Canary Rollout
 
 ```bash
 cd ops
 ./deploy-canary.sh airflow v1.0.0
 ```
 
-#### Manual Deployment
+#### Manual Canary Rollout
 
 ```bash
 # Apply rollout manifest

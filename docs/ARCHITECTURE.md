@@ -36,35 +36,10 @@ This document provides a comprehensive architectural overview of the Modern Data
 - Storage and selected non-storage pipeline scripts now use reusable design patterns (Template Method, Strategy, Adapter, Facade).
 - CI now runs repository validation, Java build, and pipeline pattern smoke tests (`pipelines/smoke/pattern_smoke.py`).
 
-#### Java API Integration Pattern Flow
+Detailed code-level diagrams now live in the docs that own those implementations:
 
-```mermaid
-flowchart LR
-    C[Controllers] --> S[Service Facades]
-    S --> H[HttpServiceClient\nTemplate Method]
-    H --> E1[UpstreamServiceException]
-    H --> E2[IntegrationConnectivityException]
-    E1 --> EH[ApiExceptionHandler\n502 + code/integration/upstreamStatus]
-    E2 --> EH
-    S --> D[Dependencies\nAirflow / Atlas / MLflow / GitHub]
-```
-
-#### Pipeline Pattern Refactor Map
-
-```mermaid
-flowchart TB
-    SP[StreamProcessor\nTemplate Method] --> MONGO[mongodb_streaming.py]
-    SP --> REDIS[redis_integration.py]
-    SP --> INFLUX[aws_s3_influxdb.py]
-
-    RV[RequiredFieldsValidator\nStrategy] --> SP
-    CF[CachedFeastFeatureProvider\nAdapter] --> REDIS
-
-    KBP[KafkaBatchProducer\nTemplate Method] --> KP[pipelines/kafka/producer.py]
-    MB[MonitoringBootstrap\nTemplate Method] --> MON[pipelines/monitoring/monitoring.py]
-    LR[LineageRegistrar\nFacade] --> GOV[pipelines/governance/atlas_stub.py]
-    BU[BiUploader\nStrategy Family] --> BI[pipelines/bi_dashboards/bi_dashboard.py]
-```
+- Java API pattern interaction diagram: `java-api/DESIGN_PATTERNS.md`
+- Pipeline pattern topology and smoke-test flow: `pipelines/DESIGN_PATTERNS.md`
 
 #### CI Validation Flow
 
@@ -105,7 +80,7 @@ Reference:
 ### High-Level System Context
 
 ```mermaid
-graph TB
+flowchart TB
     subgraph "External Systems"
         USER[Data Users<br/>Analysts, Scientists, Engineers]
         ADMIN[System Admins<br/>Platform Engineers, DevOps]
@@ -147,7 +122,7 @@ graph TB
 ### Layered Architecture View
 
 ```mermaid
-graph TB
+flowchart TB
     subgraph "Presentation Layer"
         UI[Web UI]
         API[REST APIs]
@@ -199,7 +174,7 @@ graph TB
 ### Ingestion Components
 
 ```mermaid
-graph LR
+flowchart LR
     subgraph "Batch Ingestion"
         JDBC[JDBC Connectors]
         FILE[File Readers]
@@ -277,7 +252,7 @@ flowchart TB
 ### Storage Components
 
 ```mermaid
-graph TB
+flowchart TB
     subgraph "Multi-Tier Storage"
         subgraph "Hot Tier"
             REDIS[Redis Cache]
@@ -598,7 +573,7 @@ mindmap
 ### Multi-Environment Deployment Model
 
 ```mermaid
-graph TB
+flowchart TB
     subgraph "Kubernetes Cluster"
         subgraph "Control Plane"
             API[API Server]
@@ -693,7 +668,7 @@ gitGraph
 ### CI/CD Pipeline Architecture
 
 ```mermaid
-graph TB
+flowchart TB
     subgraph "Development"
         DEV_K8S[Local K8s]
         DEV_DB[SQLite]
@@ -743,7 +718,7 @@ graph TB
 ### Defense in Depth Strategy
 
 ```mermaid
-graph TB
+flowchart TB
     subgraph "Security Architecture"
         subgraph "Network Security"
             FW[Firewall]
@@ -842,7 +817,7 @@ flowchart LR
 ### Horizontal and Vertical Scaling
 
 ```mermaid
-graph LR
+flowchart LR
     subgraph "Auto-scaling Architecture"
         METRIC[Metrics Server] --> HPA[Horizontal Pod Autoscaler]
         HPA --> DECIDE{Scaling Decision}
@@ -869,7 +844,7 @@ graph LR
 ### Performance Optimization Strategy
 
 ```mermaid
-graph TB
+flowchart TB
     subgraph "Performance Optimization"
         subgraph "Application Layer"
             CACHE_APP[Application Cache]
@@ -922,7 +897,7 @@ graph TB
 ### Observability Architecture
 
 ```mermaid
-graph TB
+flowchart TB
     subgraph "Observability Platform"
         subgraph "Metrics"
             PROM[Prometheus]
@@ -980,7 +955,7 @@ graph TB
 ### Alerting and Incident Response
 
 ```mermaid
-graph LR
+flowchart LR
     subgraph "SLI Collection"
         LATENCY[Latency Metrics]
         ERROR[Error Rate]
@@ -1081,7 +1056,7 @@ stateDiagram-v2
 ### Backup and Recovery Architecture
 
 ```mermaid
-graph TB
+flowchart TB
     subgraph "Recovery Objectives"
         subgraph "RPO Tiers"
             RPO1[Tier 1: Zero Data Loss<br/>Real-time Replication]

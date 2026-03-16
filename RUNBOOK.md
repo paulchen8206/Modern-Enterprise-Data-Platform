@@ -110,7 +110,7 @@ Use these diagrams to choose the right local runtime mode before executing proce
 ### 1. Pure Docker Compose (All Services in Compose)
 
 ```mermaid
-graph LR
+flowchart LR
   Host[Host Machine] --> API[workflow-api container]
   Host --> AF[airflow-webserver]
   Host --> K[kafka]
@@ -129,7 +129,7 @@ graph LR
 ### 2. Kind-Only Local Kubernetes
 
 ```mermaid
-graph LR
+flowchart LR
   Host[Host Machine] --> Kind[Kind Cluster]
 
   subgraph Kind
@@ -151,7 +151,7 @@ graph LR
 ### 3. Hybrid (Kind App Stack + Compose Support Services)
 
 ```mermaid
-graph LR
+flowchart LR
   Host[Host Machine] --> Kind[Kind Cluster]
   Host --> CPG[postgres-conduktor container]
   Host --> CUI[conduktor container]
@@ -177,7 +177,7 @@ graph LR
 ### 4. Java API Runtime Options
 
 ```mermaid
-graph TD
+flowchart TB
   A[Java API Host Run\nmake run-java-api-local-safe] --> B[Connect to Compose or Kind endpoints]
   C[Java API Container Run\nmake run-java-api-container] --> D[Compose profile inside workflow-api container]
 
@@ -192,7 +192,7 @@ Use this procedure when you want a full local Kubernetes validation cycle on Doc
 1. Move to repository root.
 
 ```bash
-cd /Users/pchen/mygithub/Modern-Enterprise-Data-Stack
+cd /Users/pchen/mygithub/Modern-Enterprise-Data-Platform
 ```
 
 1. Clean old runtime state (safe reset).
@@ -248,7 +248,7 @@ Use this procedure when you want local development without Kind.
 1. Move to repository root.
 
 ```bash
-cd /Users/pchen/mygithub/Modern-Enterprise-Data-Stack
+cd /Users/pchen/mygithub/Modern-Enterprise-Data-Platform
 ```
 
 1. Clean old runtime state.
