@@ -7,6 +7,7 @@ flows for Tableau, Looker, and Power BI APIs.
 import os
 import pandas as pd
 import psycopg2
+from abc import ABC, abstractmethod
 from sqlalchemy import create_engine
 import requests
 import json
@@ -34,6 +35,103 @@ LOOKER_CLIENT_SECRET = os.getenv("LOOKER_CLIENT_SECRET", "your_client_secret")
 POWER_BI_WORKSPACE_ID = os.getenv("POWER_BI_WORKSPACE_ID", "workspace_uuid")
 POWER_BI_DATASET_ID = os.getenv("POWER_BI_DATASET_ID", "dataset_uuid")
 POWER_BI_ACCESS_TOKEN = os.getenv("POWER_BI_ACCESS_TOKEN", "your_access_token")
+CSV_EXPORT_PATH = "bi_data/orders_transformed.csv"
+
+
+class BiUploader(ABC):
+    """Strategy interface for uploading a prepared CSV to BI platforms."""
+
+    @abstractmethod
+    def name(self):
+        pass
+
+    @abstractmethod
+    def upload(self, csv_path):
+        pass
+
+
+class TableauUploader(BiUploader):
+    def name(self):
+        return "Tableau"
+
+    def upload(self, csv_path):
+        auth_payload = {
+            "credentials": {
+                "name": TABLEAU_USERNAME,
+                "password": TABLEAU_PASSWORD,
+                "site": {"contentUrl": TABLEAU_SITE_ID},
+            }
+        }
+        auth_response = requests.post(
+            f"{TABLEAU_SERVER}/api/3.9/auth/signin", json=auth_payload
+        )
+        auth_response.raise_for_status()
+        token = auth_response.json()["credentials"]["token"]
+
+        with open(csv_path, "rb") as f:
+            response = requests.post(
+                f"{TABLEAU_SERVER}/api/3.9/sites/{TABLEAU_PROJECT_ID}/datasources",
+                headers={"X-Tableau-Auth": token},
+                files={"file": f},
+            )
+            response.raise_for_status()
+
+
+class LookerUploader(BiUploader):
+    def name(self):
+        return "Looker"
+
+    def upload(self, csv_path):
+        auth_payload = {
+            "client_id": LOOKER_CLIENT_ID,
+            "client_secret": LOOKER_CLIENT_SECRET,
+        }
+        auth_response = requests.post(f"{LOOKER_API_URL}/login", data=auth_payload)
+        auth_response.raise_for_status()
+        token = auth_response.json()["access_token"]
+
+        with open(csv_path, "rb") as f:
+            response = requests.post(
+                f"{LOOKER_API_URL}/upload-data",
+                headers={"Authorization": f"Bearer {token}"},
+                files={"file": f},
+            )
+            response.raise_for_status()
+
+
+class PowerBiUploader(BiUploader):
+    def name(self):
+        return "Power BI"
+
+    def upload(self, csv_path):
+        dataset_payload = {
+            "name": "Orders Transformed",
+            "tables": [
+                {
+                    "name": "orders",
+                    "columns": [
+                        {"name": "order_id", "dataType": "Int64"},
+                        {"name": "customer_id", "dataType": "Int64"},
+                        {"name": "amount", "dataType": "Double"},
+                        {
+                            "name": "processed_timestamp",
+                            "dataType": "DateTime",
+                        },
+                    ],
+                }
+            ],
+        }
+
+        headers = {
+            "Authorization": f"Bearer {POWER_BI_ACCESS_TOKEN}",
+            "Content-Type": "application/json",
+        }
+        dataset_response = requests.post(
+            f"https://api.powerbi.com/v1.0/myorg/groups/{POWER_BI_WORKSPACE_ID}/datasets",
+            headers=headers,
+            json=dataset_payload,
+        )
+        dataset_response.raise_for_status()
 
 
 def fetch_data():
@@ -48,7 +146,7 @@ def fetch_data():
         query = "SELECT * FROM orders_transformed;"
         df = pd.read_sql(query, con=engine)
 
-        output_file = "bi_data/orders_transformed.csv"
+        output_file = CSV_EXPORT_PATH
         df.to_csv(output_file, index=False)
         print(f"✅ Data exported for BI tools: {output_file}")
 
@@ -61,31 +159,8 @@ def upload_to_tableau():
     Upload dataset to Tableau using REST API.
     """
     try:
-        # Get authentication token
-        auth_payload = {
-            "credentials": {
-                "name": TABLEAU_USERNAME,
-                "password": TABLEAU_PASSWORD,
-                "site": {"contentUrl": TABLEAU_SITE_ID},
-            }
-        }
-        auth_response = requests.post(
-            f"{TABLEAU_SERVER}/api/3.9/auth/signin", json=auth_payload
-        )
-        auth_response.raise_for_status()
-        token = auth_response.json()["credentials"]["token"]
-
-        # Upload the generated CSV as a datasource artifact.
-        with open("bi_data/orders_transformed.csv", "rb") as f:
-            response = requests.post(
-                f"{TABLEAU_SERVER}/api/3.9/sites/{TABLEAU_PROJECT_ID}/datasources",
-                headers={"X-Tableau-Auth": token},
-                files={"file": f},
-            )
-            response.raise_for_status()
-
+        TableauUploader().upload(CSV_EXPORT_PATH)
         print("✅ Data uploaded to Tableau successfully.")
-
     except Exception as e:
         print(f"❌ Error uploading data to Tableau: {e}")
 
@@ -95,26 +170,8 @@ def upload_to_looker():
     Upload dataset to Looker via API.
     """
     try:
-        # Authenticate
-        auth_payload = {
-            "client_id": LOOKER_CLIENT_ID,
-            "client_secret": LOOKER_CLIENT_SECRET,
-        }
-        auth_response = requests.post(f"{LOOKER_API_URL}/login", data=auth_payload)
-        auth_response.raise_for_status()
-        token = auth_response.json()["access_token"]
-
-        # Upload CSV to Looker
-        with open("bi_data/orders_transformed.csv", "rb") as f:
-            response = requests.post(
-                f"{LOOKER_API_URL}/upload-data",
-                headers={"Authorization": f"Bearer {token}"},
-                files={"file": f},
-            )
-            response.raise_for_status()
-
+        LookerUploader().upload(CSV_EXPORT_PATH)
         print("✅ Data uploaded to Looker successfully.")
-
     except Exception as e:
         print(f"❌ Error uploading data to Looker: {e}")
 
@@ -124,38 +181,20 @@ def upload_to_power_bi():
     Upload dataset to Power BI via API.
     """
     try:
-        # Prepare dataset schema
-        dataset_payload = {
-            "name": "Orders Transformed",
-            "tables": [
-                {
-                    "name": "orders",
-                    "columns": [
-                        {"name": "order_id", "dataType": "Int64"},
-                        {"name": "customer_id", "dataType": "Int64"},
-                        {"name": "amount", "dataType": "Double"},
-                        {"name": "processed_timestamp", "dataType": "DateTime"},
-                    ],
-                }
-            ],
-        }
-
-        # Provision dataset schema before data push (stub flow).
-        headers = {
-            "Authorization": f"Bearer {POWER_BI_ACCESS_TOKEN}",
-            "Content-Type": "application/json",
-        }
-        dataset_response = requests.post(
-            f"https://api.powerbi.com/v1.0/myorg/groups/{POWER_BI_WORKSPACE_ID}/datasets",
-            headers=headers,
-            json=dataset_payload,
-        )
-        dataset_response.raise_for_status()
-
+        PowerBiUploader().upload(CSV_EXPORT_PATH)
         print("✅ Data uploaded to Power BI successfully.")
-
     except Exception as e:
         print(f"❌ Error uploading data to Power BI: {e}")
+
+
+def run_uploads(uploaders, csv_path):
+    """Template-style orchestration for a set of BI upload strategies."""
+    for uploader in uploaders:
+        try:
+            uploader.upload(csv_path)
+            print(f"✅ Data uploaded to {uploader.name()} successfully.")
+        except Exception as exc:
+            print(f"❌ Error uploading data to {uploader.name()}: {exc}")
 
 
 if __name__ == "__main__":
@@ -163,6 +202,7 @@ if __name__ == "__main__":
     fetch_data()
 
     # Upload to various BI tools
-    upload_to_tableau()
-    upload_to_looker()
-    upload_to_power_bi()
+    run_uploads(
+        [TableauUploader(), LookerUploader(), PowerBiUploader()],
+        CSV_EXPORT_PATH,
+    )

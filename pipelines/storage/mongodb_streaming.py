@@ -1,10 +1,9 @@
 """Kafka-to-MongoDB streaming sink for raw sensor events."""
 
 import os
-import json
-from kafka import KafkaConsumer
 from pymongo import MongoClient
-from datetime import datetime
+
+from pipeline_patterns import RequiredFieldsValidator, StreamProcessor, with_default_timestamp
 
 # ---------------------------
 # CONFIGURATION
@@ -23,46 +22,31 @@ mongo_client = MongoClient(MONGODB_URI)
 db = mongo_client[MONGODB_DB]
 collection = db[MONGODB_COLLECTION]
 
+class MongoStreamingPipeline(StreamProcessor):
+    """Template-based Kafka-to-MongoDB sink pipeline."""
 
-# ---------------------------
-# FUNCTION: CONSUME DATA FROM KAFKA & STORE IN MONGODB
-# ---------------------------
-def consume_kafka_to_mongodb():
-    """
-    Consumes real-time sensor data from Kafka and stores it in MongoDB.
-    """
-    consumer = KafkaConsumer(
-        KAFKA_TOPIC,
-        bootstrap_servers=[KAFKA_BROKER],
-        value_deserializer=lambda v: json.loads(v.decode("utf-8")),
-    )
+    def transform(self, payload):
+        return {
+            "device_id": payload["device_id"],
+            "reading_value": payload["reading_value"],
+            "timestamp": with_default_timestamp(payload),
+        }
 
-    print(f"✅ Listening for real-time sensor data on Kafka topic: {KAFKA_TOPIC}")
-
-    for message in consumer:
-        data = message.value
-        device_id = data.get("device_id")
-        reading_value = data.get("reading_value")
-        timestamp = data.get("timestamp", int(datetime.utcnow().timestamp()))
-
-        if device_id is None or reading_value is None:
-            continue  # Ignore malformed messages
-
+    def persist(self, transformed, raw_payload):
         # Persist raw records first; enrichment can happen in downstream jobs.
-        # Insert into MongoDB
-        collection.insert_one(
-            {
-                "device_id": device_id,
-                "reading_value": reading_value,
-                "timestamp": timestamp,
-            }
+        collection.insert_one(transformed)
+        print(
+            f"Stored in MongoDB: Device {transformed['device_id']} | Reading {transformed['reading_value']}"
         )
-
-        print(f"✅ Stored in MongoDB: Device {device_id} | Reading {reading_value}")
 
 
 # ---------------------------
 # MAIN EXECUTION
 # ---------------------------
 if __name__ == "__main__":
-    consume_kafka_to_mongodb()
+    pipeline = MongoStreamingPipeline(
+        topic=KAFKA_TOPIC,
+        broker=KAFKA_BROKER,
+        validator=RequiredFieldsValidator(["device_id", "reading_value"]),
+    )
+    pipeline.run()

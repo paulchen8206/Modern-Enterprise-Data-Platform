@@ -6,6 +6,7 @@ Consumes Kafka sensor events and maintains lightweight online aggregates in Feas
 import os
 import feast
 import pandas as pd
+from abc import ABC, abstractmethod
 from feast import FeatureStore, Entity, FeatureView, Field
 from feast.types import Float32, Int64
 from datetime import datetime
@@ -54,6 +55,33 @@ device_feature_view = FeatureView(
 )
 
 
+class RollingFeatureStrategy(ABC):
+    """Strategy interface for computing rolling aggregate features."""
+
+    @abstractmethod
+    def next_average(self, existing_avg, reading_value):
+        pass
+
+    @abstractmethod
+    def next_max(self, existing_max, reading_value):
+        pass
+
+
+class MeanMaxRollingStrategy(RollingFeatureStrategy):
+    """Default strategy for online average/max updates."""
+
+    def next_average(self, existing_avg, reading_value):
+        safe_avg = existing_avg if existing_avg is not None else 0
+        return (safe_avg + reading_value) / 2
+
+    def next_max(self, existing_max, reading_value):
+        safe_max = existing_max if existing_max is not None else 0
+        return max(safe_max, reading_value)
+
+
+rolling_feature_strategy = MeanMaxRollingStrategy()
+
+
 def consume_stream_and_store_features():
     """
     Consumes real-time Kafka messages, extracts features, and stores in Feast Feature Store.
@@ -81,12 +109,12 @@ def consume_stream_and_store_features():
             entity_rows=[{"device_id": device_id}],
         ).to_dict()
 
-        # Compute new aggregate features
-        avg_reading = (
-            existing_features["device_features:avg_reading"][0] or 0 + reading_value
-        ) / 2
-        max_reading = max(
-            existing_features["device_features:max_reading"][0] or 0, reading_value
+        # Compute new aggregate features via strategy to keep logic swappable.
+        avg_reading = rolling_feature_strategy.next_average(
+            existing_features["device_features:avg_reading"][0], reading_value
+        )
+        max_reading = rolling_feature_strategy.next_max(
+            existing_features["device_features:max_reading"][0], reading_value
         )
 
         # Prepare DataFrame for Feast ingestion

@@ -5,21 +5,19 @@ import com.modern.enterprise.workflowapi.config.AppConfigProperties;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
 import org.springframework.stereotype.Service;
 
 @Service
-public class MlflowService {
+public class MlflowService extends HttpServiceClient {
   private final AppConfigProperties.Mlflow cfg;
-  private final HttpClient httpClient;
   private final ObjectMapper mapper = new ObjectMapper();
 
   public MlflowService(AppConfigProperties props, HttpClient httpClient) {
+    super(httpClient);
     this.cfg = props.getMlflow();
-    this.httpClient = httpClient;
   }
 
   public String createRun(String experimentId, String runName) throws Exception {
@@ -31,22 +29,13 @@ public class MlflowService {
         .timeout(Duration.ofSeconds(cfg.getRequestTimeoutSeconds()))
         .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
         .build();
-    HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
-    if (resp.statusCode() >= 300) {
-      throw new IllegalStateException("MLflow request failed: " + resp.statusCode() + " " + resp.body());
-    }
-    return resp.body();
+    return executeOrThrow(req, "MLflow");
   }
 
   public boolean canReachMlflow() {
-    try {
-      // Base tracking URI is sufficient for liveness checks in local deployments.
-      HttpRequest req = HttpRequest.newBuilder().uri(URI.create(cfg.getTrackingUri()))
-          .timeout(Duration.ofSeconds(cfg.getRequestTimeoutSeconds())).GET().build();
-      HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
-      return resp.statusCode() < 500;
-    } catch (Exception ex) {
-      return false;
-    }
+    // Base tracking URI is sufficient for liveness checks in local deployments.
+    HttpRequest req = HttpRequest.newBuilder().uri(URI.create(cfg.getTrackingUri()))
+        .timeout(Duration.ofSeconds(cfg.getRequestTimeoutSeconds())).GET().build();
+    return isReachable(req);
   }
 }

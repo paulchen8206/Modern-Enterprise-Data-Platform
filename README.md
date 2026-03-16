@@ -42,13 +42,15 @@ Use `Makefile` targets to standardize daily operations:
 ## Documentation Hub
 
 - Getting started: `docs/QUICK_START.md`
-- Local development workflow: `RUNBOOK.md.md`
+- Local development workflow: `RUNBOOK.md`
 - System design details: `docs/ARCHITECTURE.md`
 - Progressive delivery patterns: `docs/DEPLOYMENT.md`
 - Iceberg table format usage: `docs/ICEBERG.md`
 - AWS Well-Architected best practices: `docs/AWS_WELL_ARCHITECTED.md`
 - Infra container layout: `infra/README.md`
 - Java orchestration API: `java-api/README.md`
+- Java API design patterns: `java-api/DESIGN_PATTERNS.md`
+- Pipeline design patterns: `pipelines/DESIGN_PATTERNS.md`
 - Monitoring setup notes: `pipelines/monitoring/PROMETHEUS_GRAFANA_SETUP.md`
 
 ## Infrastructure Containers Layout (Compose)
@@ -152,33 +154,33 @@ Use this section when you want to deploy, verify health, and monitor the stack q
 make up
 ```
 
-2. Verify core services are running:
+1. Verify core services are running:
 
 ```bash
 make ps
 ```
 
-3. Verify service endpoints:
+1. Verify service endpoints:
 
 - Airflow: [http://localhost:8080](http://localhost:8080)
 - Grafana: [http://localhost:3000](http://localhost:3000)
 - Prometheus: [http://localhost:9090](http://localhost:9090)
 - MinIO Console: [http://localhost:9001](http://localhost:9001)
 
-4. Check logs for failed services:
+1. Check logs for failed services:
 
 ```bash
 make logs
 ```
 
-5. Run pipelines:
+1. Run pipelines:
 
 - Enable `batch_ingestion_dag` in Airflow for batch execution.
 - Run `make run-batch-job` for ad hoc batch execution.
 - Run `make run-kafka-producer` and `make run-streaming-job` for streaming.
 - Run `make run-iceberg-demo` to write Spark batch output to Iceberg.
 
-6. Use the runbook:
+1. Use the runbook:
 
 - See the `Operational Runbook` section for failure triage and recovery steps.
 
@@ -540,78 +542,84 @@ graph LR
 ### CI/CD and Deployment Flow
 
 ```mermaid
-graph LR
-    subgraph "Development"
-        DEV[Developer] --> GIT[Git Push]
-    end
+flowchart LR
+  subgraph Dev[Development]
+    D[Developer] --> GIT[Push to dev or PR to qa-stg-prd]
+  end
 
-    subgraph "CI/CD Pipeline"
-        GIT --> GHA[GitHub Actions]
-        GHA --> TEST[Run Tests]
-        TEST --> BUILD[Build Docker Images]
-        BUILD --> SCAN[Security Scan]
-        SCAN --> PUSH[Push to Registry]
-    end
+  subgraph CI[CI Workflow]
+    GHA[.github/workflows/ci.yml]
+    VAL[make validate-*]
+    JPKG[mvn -f java-api/pom.xml -DskipTests package]
+    SMK[python3 pipelines/smoke/pattern_smoke.py]
+    HLINT[helm lint and env template checks]
+    GHA --> VAL --> JPKG --> SMK --> HLINT
+  end
 
-    subgraph "Deployment"
-        PUSH --> ARGO[Argo CD]
-        ARGO --> K8S[Kubernetes Cluster]
-        K8S --> HELM[Helm Charts]
-        HELM --> PODS[Deploy Pods]
-    end
+  subgraph CD[CD and Runtime]
+    CDF[.github/workflows/cd.yml]
+    ARGO[Argo CD]
+    K8S[Kubernetes Cluster]
+    ROLL[Argo Rollouts\nBlue-Green and Canary]
+    CDF --> ARGO --> K8S --> ROLL
+  end
 
-    subgraph "Infrastructure"
-        TERRA[Terraform] --> CLOUD[Cloud Resources]
-        CLOUD --> K8S
-    end
+  subgraph Infra[Infrastructure as Code]
+    TF[Terraform in iac/]
+    CLOUD[Cloud Resources]
+    TF --> CLOUD --> K8S
+  end
 
-    PODS --> MON[Monitoring]
+  GIT --> GHA
+  GIT --> CDF
+  ROLL --> MON[Monitoring and Alerts]
 ```
 
 ### Unified Platform Flow
 
 ```mermaid
-graph TB
-    subgraph Batch["Batch Processing"]
-        BS[Batch Source<br/>MySQL, Files, User Interaction]
-        AD[Airflow Batch DAG<br/>- Extracts data from MySQL<br/>- Validates with Great Expectations<br/>- Uploads raw data to MinIO]
-        SB[Spark Batch Job<br/>- Reads raw CSV from MinIO<br/>- Transforms, cleans, enriches<br/>- Writes to PostgreSQL & MinIO]
-        PDS[Processed Data Store<br/>PostgreSQL, MongoDB, AWS S3]
-        CI[Cache & Indexing<br/>Elasticsearch, Redis]
+flowchart TB
+  subgraph Batch[Batch Processing]
+    SRCB[Batch Sources\nMySQL and files]
+    DAGB[Airflow batch_ingestion_dag]
+    SPB[Spark batch job\npipelines/spark/spark_batch_job.py]
+    RAW[Raw zone\nMinIO raw-data]
+    PROC[Processed zone\nPostgreSQL and MinIO processed-data]
 
-        BS -->|Extract/Validate| AD
-        AD -->|spark-submit| SB
-        SB -->|Load/Analyze| PDS
-        PDS -->|Query/Analyze| CI
-    end
+    SRCB -->|extract and validate| DAGB
+    DAGB -->|publish raw CSV| RAW
+    RAW -->|transform| SPB
+    SPB -->|load| PROC
+  end
 
-    subgraph Stream["Streaming Processing"]
-        SS[Streaming Source<br/>Kafka]
-        SSJ[Spark Streaming Job<br/>- Consumes Kafka messages<br/>- Filters and detects anomalies<br/>- Persists to PostgreSQL & MinIO]
+  subgraph Stream[Streaming Processing]
+    SRCS[Kafka topic sensor_readings]
+    SPS[Spark streaming job\npipelines/spark/spark_streaming_job.py]
+    SINKS[Streaming sinks\nPostgreSQL and MinIO]
+    SRCS -->|consume| SPS -->|append| SINKS
+  end
 
-        SS --> SSJ
-    end
+  subgraph Extensions[Extension Pipelines]
+    STOR[Storage adapters\nMongoDB InfluxDB Redis S3 HDFS]
+    GOV[Governance stub\nAtlas OpenMetadata]
+    MLP[ML stubs\nMLflow Feast]
+    BI[BI upload stubs]
+  end
 
-    subgraph Monitor["Monitoring & Governance"]
-        MG[Monitoring & Data Governance<br/>- Prometheus & Grafana<br/>- Apache Atlas / OpenMetadata]
-    end
+  subgraph Platform[Platform and Delivery]
+    MON[Prometheus and Grafana]
+    CI[GitHub Actions CI\nincludes pattern smoke tests]
+    K8S[Kubernetes with Argo CD and Rollouts]
+  end
 
-    subgraph ML["AI/ML Serving"]
-        MLS[AI/ML Serving<br/>- Feature Store Feast<br/>- MLflow Model Tracking<br/>- Model training & serving<br/>- BI Dashboards]
-    end
-
-    subgraph CICD["CI/CD & Infrastructure"]
-        CIP[CI/CD Pipelines<br/>GitHub Actions / Jenkins<br/>Terraform for Cloud Deploy]
-        K8S[Kubernetes Cluster<br/>Argo CD for GitOps<br/>Helm Charts for Deployment]
-    end
-
-    SSJ --> PDS
-    MG -.monitors.-> Batch
-    MG -.monitors.-> Stream
-    ML -.uses.-> PDS
-    CIP --> K8S
-    K8S -.orchestrates.-> Batch
-    K8S -.orchestrates.-> Stream
+  PROC --> STOR
+  SINKS --> STOR
+  PROC --> GOV
+  PROC --> MLP
+  PROC --> BI
+  MON -.observe.-> Batch
+  MON -.observe.-> Stream
+  CI --> K8S
 ```
 
 ### Full Flow Reference
@@ -623,70 +631,76 @@ Although frontend/backend integration is not implemented in this repository (whi
 ### Runtime Infrastructure View
 
 ```mermaid
-graph TB
-    subgraph "Docker Compose Stack"
-        subgraph "Data Sources"
-            MYSQL[MySQL<br/>Port: 3306]
-            KAFKA[Kafka<br/>Port: 9092]
-            ZK[Zookeeper<br/>Port: 2181]
-        end
-
-        subgraph "Processing"
-            AIR[Airflow<br/>Webserver:8080<br/>Scheduler]
-            SPARK[Spark<br/>Master/Worker]
-        end
-
-        subgraph "Storage"
-            MINIO[MinIO<br/>API: 9000<br/>Console: 9001]
-            PG[PostgreSQL<br/>Port: 5432]
-        end
-
-        subgraph "Monitoring"
-            PROM[Prometheus<br/>Port: 9090]
-            GRAF[Grafana<br/>Port: 3000]
-        end
-
-        KAFKA --> ZK
-        AIR --> MYSQL
-        AIR --> PG
-        AIR --> SPARK
-        SPARK --> MINIO
-        SPARK --> PG
-        SPARK --> KAFKA
-        PROM --> AIR
-        PROM --> SPARK
-        GRAF --> PROM
+flowchart TB
+  subgraph Compose[Docker Compose Stack]
+    subgraph Sources[Sources]
+      ZK[Zookeeper 2181]
+      KAFKA[Kafka 9092]
+      MYSQL[MySQL 3306]
     end
+
+    subgraph Compute[Compute]
+      AIR[Airflow webserver 8080 and scheduler]
+      SPARK[Spark runtime]
+      API[workflow-api 8081]
+    end
+
+    subgraph Data[Data and Storage]
+      MINIO[MinIO 9000 and 9001]
+      PG[PostgreSQL 5432]
+      PGC[postgres-conduktor 5433]
+    end
+
+    subgraph Obs[Observability]
+      PROM[Prometheus 9090]
+      GRAF[Grafana 3000]
+    end
+
+    ZK --> KAFKA
+    AIR --> MYSQL
+    AIR --> PG
+    AIR --> SPARK
+    API --> KAFKA
+    API --> MINIO
+    API --> PG
+    SPARK --> MINIO
+    SPARK --> PG
+    SPARK --> KAFKA
+    PROM --> AIR
+    PROM --> SPARK
+    GRAF --> PROM
+    KAFKA --> PGC
+  end
 ```
 
 ### ML Lifecycle View
 
 ```mermaid
 flowchart LR
-    subgraph "Feature Engineering"
-        RAW[Raw Data] --> FE[Feature<br/>Extraction]
-        FE --> FS[Feature Store<br/>Feast]
-    end
+  subgraph Features[Feature Engineering]
+    RAW[Processed platform data] --> FE[Feature extraction jobs]
+    FE --> FS[Feast feature store stub]
+  end
 
-    subgraph "Model Training"
-        FS --> TRAIN[Training<br/>Pipeline]
-        TRAIN --> VAL[Validation]
-        VAL --> MLF[MLflow<br/>Registry]
-    end
+  subgraph Train[Training and Tracking]
+    FS --> TRN[Training pipeline stub]
+    TRN --> VAL[Validation metrics]
+    VAL --> MLF[MLflow tracking and registry stub]
+  end
 
-    subgraph "Model Serving"
-        MLF --> DEPLOY[Model<br/>Deployment]
-        DEPLOY --> API[Prediction<br/>API]
-        API --> APP[Applications]
-    end
+  subgraph Serve[Serving and Consumption]
+    MLF --> DEP[Model deployment path]
+    DEP --> API[Prediction API integration]
+    API --> APPS[Applications and dashboards]
+  end
 
-    subgraph "Monitoring"
-        API --> METRICS[Performance<br/>Metrics]
-        METRICS --> DRIFT[Drift<br/>Detection]
-        DRIFT --> RETRAIN[Retrigger<br/>Training]
-    end
+  subgraph Monitor[Model Monitoring]
+    API --> MET[Performance metrics]
+    MET --> DRF[Drift detection]
+    DRF --> RET[Retraining trigger]
+  end
 
-    RETRAIN --> TRAIN
+  RET --> TRN
 ```
 
 ## Directory Structure
@@ -694,7 +708,7 @@ flowchart LR
 ```text
 modern-enterprise-data-stack/
   ├── README.md
-  ├── RUNBOOK.md.md
+  ├── RUNBOOK.md
   ├── Makefile
   ├── .github/
   │   └── workflows/
@@ -722,8 +736,8 @@ modern-enterprise-data-stack/
   │   │   └── docker-compose.ci.yaml
   │   ├── dockerfiles/
   │   │   ├── airflow.Dockerfile
-  │   │   ├── sample_dotnet_backend.Dockerfile
   │   │   ├── spark.Dockerfile
+  │   │   └── workflow-api.Dockerfile
   │   └── README.md
   ├── iac/
   ├── k8s/
@@ -741,7 +755,7 @@ modern-enterprise-data-stack/
   │   ├── deploy-canary.sh
   │   ├── deploy-kind.sh
   │   ├── init_db.sql
-  │   ├── setup-advanced-deployments.sh
+  │   ├── setup.sh
   │   ├── kind-smoke.sh
   │   └── operations/
   ├── java-api/

@@ -5,7 +5,6 @@ import com.modern.enterprise.workflowapi.config.AppConfigProperties;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
@@ -16,16 +15,15 @@ import java.util.Map;
 import org.springframework.stereotype.Service;
 
 @Service
-public class AirflowService {
+public class AirflowService extends HttpServiceClient {
   // UTC timestamp keeps run IDs stable across developer machines and CI agents.
   private static final DateTimeFormatter ID_FMT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss").withZone(ZoneOffset.UTC);
   private final AppConfigProperties.Airflow cfg;
-  private final HttpClient httpClient;
   private final ObjectMapper mapper = new ObjectMapper();
 
   public AirflowService(AppConfigProperties props, HttpClient httpClient) {
+    super(httpClient);
     this.cfg = props.getAirflow();
-    this.httpClient = httpClient;
   }
 
   public String triggerBatch() throws Exception {
@@ -42,20 +40,15 @@ public class AirflowService {
   }
 
   public boolean canReachAirflow() {
-    try {
-      // Health endpoint returns 200 in the normal case, but auth/network intermediaries
-      // can still prove basic reachability with non-5xx status codes.
-      HttpRequest req = HttpRequest.newBuilder()
-          .uri(URI.create(cfg.getBaseUrl() + "/health"))
-          .header("Authorization", basicAuth())
-          .timeout(Duration.ofSeconds(cfg.getRequestTimeoutSeconds()))
-          .GET()
-          .build();
-      HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
-      return resp.statusCode() < 500;
-    } catch (Exception ex) {
-      return false;
-    }
+    // Health endpoint returns 200 in the normal case, but auth/network intermediaries
+    // can still prove basic reachability with non-5xx status codes.
+    HttpRequest req = HttpRequest.newBuilder()
+        .uri(URI.create(cfg.getBaseUrl() + "/health"))
+        .header("Authorization", basicAuth())
+        .timeout(Duration.ofSeconds(cfg.getRequestTimeoutSeconds()))
+        .GET()
+        .build();
+    return isReachable(req);
   }
 
   private void postDagRun(String dagId, String runId) throws Exception {
@@ -68,10 +61,7 @@ public class AirflowService {
         .timeout(Duration.ofSeconds(cfg.getRequestTimeoutSeconds()))
         .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
         .build();
-    HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
-    if (resp.statusCode() >= 300) {
-      throw new IllegalStateException("Airflow request failed: " + resp.statusCode() + " " + resp.body());
-    }
+    executeOrThrow(req, "Airflow");
   }
 
   private String basicAuth() {

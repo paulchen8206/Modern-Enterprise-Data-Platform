@@ -30,6 +30,53 @@ This document provides a comprehensive architectural overview of the Modern Data
 - Compose data layer intentionally separates project and Conduktor metadata into two Postgres services (`postgres` and `postgres-conduktor`).
 - Local deployment and verification scripts are standardized in `ops/deploy-kind.sh` and `ops/kind-smoke.sh`.
 
+### Code-Reviewed Alignment (March 2026)
+
+- Java API outbound integrations now share a Template Method base (`HttpServiceClient`) with typed integration exceptions and centralized 502 mapping.
+- Storage and selected non-storage pipeline scripts now use reusable design patterns (Template Method, Strategy, Adapter, Facade).
+- CI now runs repository validation, Java build, and pipeline pattern smoke tests (`pipelines/smoke/pattern_smoke.py`).
+
+#### Java API Integration Pattern Flow
+
+```mermaid
+flowchart LR
+    C[Controllers] --> S[Service Facades]
+    S --> H[HttpServiceClient\nTemplate Method]
+    H --> E1[UpstreamServiceException]
+    H --> E2[IntegrationConnectivityException]
+    E1 --> EH[ApiExceptionHandler\n502 + code/integration/upstreamStatus]
+    E2 --> EH
+    S --> D[Dependencies\nAirflow / Atlas / MLflow / GitHub]
+```
+
+#### Pipeline Pattern Refactor Map
+
+```mermaid
+flowchart TB
+    SP[StreamProcessor\nTemplate Method] --> MONGO[mongodb_streaming.py]
+    SP --> REDIS[redis_integration.py]
+    SP --> INFLUX[aws_s3_influxdb.py]
+
+    RV[RequiredFieldsValidator\nStrategy] --> SP
+    CF[CachedFeastFeatureProvider\nAdapter] --> REDIS
+
+    KBP[KafkaBatchProducer\nTemplate Method] --> KP[pipelines/kafka/producer.py]
+    MB[MonitoringBootstrap\nTemplate Method] --> MON[pipelines/monitoring/monitoring.py]
+    LR[LineageRegistrar\nFacade] --> GOV[pipelines/governance/atlas_stub.py]
+    BU[BiUploader\nStrategy Family] --> BI[pipelines/bi_dashboards/bi_dashboard.py]
+```
+
+#### CI Validation Flow
+
+```mermaid
+flowchart LR
+    TRIG[Push dev / PR qa-stg-prd] --> CI[.github/workflows/ci.yml]
+    CI --> V[make validate-*]
+    CI --> JB[mvn -f java-api/pom.xml -DskipTests package]
+    CI --> SMOKE[python3 pipelines/smoke/pattern_smoke.py]
+    CI --> HELM[helm lint/template by env]
+```
+
 ### How to Read This Document
 
 - Start with `System Architecture` for high-level context.
@@ -514,37 +561,37 @@ mindmap
 ### Detailed Technology Matrix
 
 - **Batch Processing**
-    Technology: Apache Spark
-    Rationale: Mature ecosystem; unified batch/stream API; strong ML support
-    Alternatives considered: Hadoop MapReduce, Apache Beam
+  Technology: Apache Spark
+  Rationale: Mature ecosystem; unified batch/stream API; strong ML support
+  Alternatives considered: Hadoop MapReduce, Apache Beam
 - **Stream Processing**
-    Technology: Spark Streaming
-    Rationale: Integration with batch; exactly-once semantics; micro-batch architecture
-    Alternatives considered: Apache Flink, Apache Storm
+  Technology: Spark Streaming
+  Rationale: Integration with batch; exactly-once semantics; micro-batch architecture
+  Alternatives considered: Apache Flink, Apache Storm
 - **Message Queue**
-    Technology: Apache Kafka
-    Rationale: High throughput; durability; stream replay capability
-    Alternatives considered: RabbitMQ, AWS Kinesis
+  Technology: Apache Kafka
+  Rationale: High throughput; durability; stream replay capability
+  Alternatives considered: RabbitMQ, AWS Kinesis
 - **Orchestration**
-    Technology: Apache Airflow
-    Rationale: Rich UI; extensive operators; Python-native
-    Alternatives considered: Prefect, Dagster, Luigi
+  Technology: Apache Airflow
+  Rationale: Rich UI; extensive operators; Python-native
+  Alternatives considered: Prefect, Dagster, Luigi
 - **Object Storage**
-    Technology: MinIO
-    Rationale: S3-compatible; self-hosted option; high performance
-    Alternatives considered: AWS S3, Azure Blob, GCS
+  Technology: MinIO
+  Rationale: S3-compatible; self-hosted option; high performance
+  Alternatives considered: AWS S3, Azure Blob, GCS
 - **OLAP Database**
-    Technology: PostgreSQL
-    Rationale: SQL compliance; extensions ecosystem; cost-effective
-    Alternatives considered: Snowflake, ClickHouse, BigQuery
+  Technology: PostgreSQL
+  Rationale: SQL compliance; extensions ecosystem; cost-effective
+  Alternatives considered: Snowflake, ClickHouse, BigQuery
 - **Container Orchestration**
-    Technology: Kubernetes
-    Rationale: Industry standard; cloud-agnostic; rich ecosystem
-    Alternatives considered: Docker Swarm, Nomad
+  Technology: Kubernetes
+  Rationale: Industry standard; cloud-agnostic; rich ecosystem
+  Alternatives considered: Docker Swarm, Nomad
 - **Monitoring**
-    Technology: Prometheus + Grafana
-    Rationale: Open source; Kubernetes native; flexible querying
-    Alternatives considered: DataDog, New Relic, CloudWatch
+  Technology: Prometheus + Grafana
+  Rationale: Open source; Kubernetes native; flexible querying
+  Alternatives considered: DataDog, New Relic, CloudWatch
 
 ## Deployment Architecture
 

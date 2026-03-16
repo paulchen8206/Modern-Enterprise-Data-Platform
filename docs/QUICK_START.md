@@ -126,7 +126,7 @@ sudo ./aws/install
 ```bash
 cd ops
 chmod +x *.sh
-./setup-advanced-deployments.sh
+./setup.sh
 ```
 
 ### Provision Infrastructure (Optional)
@@ -391,16 +391,16 @@ kubectl argo rollouts get rollout airflow-rollout
 
 ### Key Configuration Files
 
-| File                                | Purpose                           |
-| ----------------------------------- | --------------------------------- |
-| `k8s/rollout-blue-green.yaml`       | Blue/Green rollout definitions    |
-| `k8s/rollout-canary.yaml`           | Canary rollout definitions        |
-| `k8s/analysis-templates.yaml`       | Prometheus metrics analysis       |
-| `k8s/services.yaml`                 | Kubernetes services               |
-| `k8s/ingress.yaml`                  | Traffic routing rules             |
-| `ops/deploy-blue-green.sh`          | Interactive blue/green deployment |
-| `ops/deploy-canary.sh`              | Interactive canary deployment     |
-| `ops/setup-advanced-deployments.sh` | Infrastructure setup              |
+| File                          | Purpose                           |
+| ----------------------------- | --------------------------------- |
+| `k8s/rollout-blue-green.yaml` | Blue/Green rollout definitions    |
+| `k8s/rollout-canary.yaml`     | Canary rollout definitions        |
+| `k8s/analysis-templates.yaml` | Prometheus metrics analysis       |
+| `k8s/services.yaml`           | Kubernetes services               |
+| `k8s/ingress.yaml`            | Traffic routing rules             |
+| `ops/deploy-blue-green.sh`    | Interactive blue/green deployment |
+| `ops/deploy-canary.sh`        | Interactive canary deployment     |
+| `ops/setup.sh`                | Infrastructure setup              |
 
 ### Tune Analysis Thresholds
 

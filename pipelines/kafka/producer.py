@@ -3,6 +3,7 @@ import time
 import random
 import uuid
 import logging
+from abc import ABC, abstractmethod
 from kafka import KafkaProducer, KafkaAdminClient
 from kafka.admin import NewTopic
 from kafka.errors import KafkaError
@@ -61,48 +62,71 @@ def generate_event():
     }
 
 
-def produce_messages():
-    """
-    Continuously produces sensor messages to Kafka in batches.
-    """
-    logging.info(f"Starting Kafka Producer. Sending messages to topic: {KAFKA_TOPIC}")
-    create_kafka_topic(KAFKA_TOPIC)
+class EventGenerator(ABC):
+    """Strategy interface for producing event payloads."""
 
-    batch = []
-    message_count = 0
+    @abstractmethod
+    def next_event(self):
+        """Return the next event payload."""
 
-    try:
-        while True:
-            event = generate_event()
-            batch.append(event)
 
-            # Send records in groups to reduce request overhead and improve throughput.
-            if len(batch) >= BATCH_SIZE:
-                for msg in batch:
-                    producer.send(KAFKA_TOPIC, msg)
-                producer.flush()
-                logging.info(
-                    f"Sent batch of {len(batch)} messages to Kafka topic: {KAFKA_TOPIC}"
-                )
-                message_count += len(batch)
-                batch.clear()
+class RandomSensorEventGenerator(EventGenerator):
+    """Default event generation strategy for synthetic sensor traffic."""
 
-            # Print message details for debugging
-            logging.debug(f"Generated event: {event}")
+    def next_event(self):
+        return generate_event()
 
-            # Sleep to control message frequency
-            time.sleep(MESSAGE_FREQUENCY)
 
-    except KeyboardInterrupt:
-        logging.warning("Kafka Producer stopped manually.")
-    except KafkaError as e:
-        logging.error(f"Kafka producer error: {e}")
-    finally:
+class KafkaBatchProducer:
+    """Template Method for batched Kafka event publishing."""
+
+    def __init__(self, topic, event_generator):
+        self.topic = topic
+        self.event_generator = event_generator
+
+    def run(self):
+        logging.info(f"Starting Kafka Producer. Sending messages to topic: {self.topic}")
+        create_kafka_topic(self.topic)
+
+        batch = []
+        message_count = 0
+
+        try:
+            while True:
+                event = self.event_generator.next_event()
+                batch.append(event)
+
+                # Send records in groups to reduce request overhead and improve throughput.
+                if len(batch) >= BATCH_SIZE:
+                    self.publish_batch(batch)
+                    message_count += len(batch)
+                    batch.clear()
+
+                logging.debug(f"Generated event: {event}")
+                time.sleep(MESSAGE_FREQUENCY)
+
+        except KeyboardInterrupt:
+            logging.warning("Kafka Producer stopped manually.")
+        except KafkaError as e:
+            logging.error(f"Kafka producer error: {e}")
+        finally:
+            logging.info(
+                f"Kafka Producer shutting down. Total messages sent: {message_count}"
+            )
+            producer.close()
+
+    def publish_batch(self, batch):
+        for msg in batch:
+            producer.send(self.topic, msg)
+        producer.flush()
         logging.info(
-            f"Kafka Producer shutting down. Total messages sent: {message_count}"
+            f"Sent batch of {len(batch)} messages to Kafka topic: {self.topic}"
         )
-        producer.close()
 
 
 if __name__ == "__main__":
-    produce_messages()
+    kafka_batch_producer = KafkaBatchProducer(
+        topic=KAFKA_TOPIC,
+        event_generator=RandomSensorEventGenerator(),
+    )
+    kafka_batch_producer.run()

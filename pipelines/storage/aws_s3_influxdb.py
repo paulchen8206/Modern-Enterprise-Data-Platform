@@ -4,14 +4,13 @@ Consumes Kafka events into InfluxDB and periodically exports recent data to S3.
 """
 
 import os
-import json
 import boto3
 import pandas as pd
-import numpy as np
 from datetime import datetime
-from kafka import KafkaConsumer
 from influxdb_client import InfluxDBClient, Point, WritePrecision
 from pyspark.sql import SparkSession
+
+from pipeline_patterns import RequiredFieldsValidator, StreamProcessor, with_default_timestamp
 
 # ---------------------------
 # CONFIGURATION
@@ -51,42 +50,38 @@ write_api = influx_client.write_api(write_options=WritePrecision.NS)
 spark = SparkSession.builder.appName("AWS_S3_InfluxDB_Pipeline").getOrCreate()
 
 
-# ---------------------------
-# FUNCTION: CONSUME DATA FROM KAFKA & STORE IN INFLUXDB
-# ---------------------------
-def consume_kafka_to_influx():
-    """
-    Consumes real-time sensor data from Kafka and stores it in InfluxDB.
-    """
-    consumer = KafkaConsumer(
-        KAFKA_TOPIC,
-        bootstrap_servers=[KAFKA_BROKER],
-        value_deserializer=lambda v: json.loads(v.decode("utf-8")),
-    )
+class InfluxStreamingPipeline(StreamProcessor):
+    """Template-based Kafka-to-InfluxDB stream sink."""
 
-    print(f"✅ Listening for real-time sensor data on Kafka topic: {KAFKA_TOPIC}")
+    def transform(self, payload):
+        return {
+            "device_id": payload["device_id"],
+            "reading_value": payload["reading_value"],
+            "timestamp": with_default_timestamp(payload),
+        }
 
-    for message in consumer:
-        data = message.value
-        device_id = data.get("device_id")
-        reading_value = data.get("reading_value")
-        timestamp = data.get("timestamp", int(datetime.utcnow().timestamp()))
-
-        if device_id is None or reading_value is None:
-            continue  # Ignore malformed messages
-
+    def persist(self, transformed, raw_payload):
         # Store each reading as a tagged point for fast time-series queries.
         point = (
             Point("sensor_readings")
-            .tag("device_id", str(device_id))
-            .field("reading_value", reading_value)
-            .time(timestamp, WritePrecision.S)
+            .tag("device_id", str(transformed["device_id"]))
+            .field("reading_value", transformed["reading_value"])
+            .time(transformed["timestamp"], WritePrecision.S)
+        )
+        write_api.write(bucket=INFLUXDB_BUCKET, org=INFLUXDB_ORG, record=point)
+        print(
+            f"Stored in InfluxDB: Device {transformed['device_id']} | Reading {transformed['reading_value']}"
         )
 
-        # Write to InfluxDB
-        write_api.write(bucket=INFLUXDB_BUCKET, org=INFLUXDB_ORG, record=point)
 
-        print(f"✅ Stored in InfluxDB: Device {device_id} | Reading {reading_value}")
+def consume_kafka_to_influx():
+    """Consumes real-time sensor data from Kafka and stores it in InfluxDB."""
+    pipeline = InfluxStreamingPipeline(
+        topic=KAFKA_TOPIC,
+        broker=KAFKA_BROKER,
+        validator=RequiredFieldsValidator(["device_id", "reading_value"]),
+    )
+    pipeline.run()
 
 
 # ---------------------------

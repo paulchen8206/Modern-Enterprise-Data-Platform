@@ -57,6 +57,9 @@ jobs:
       - name: Build Java API
         run: mvn -f java-api/pom.xml -DskipTests package
 
+      - name: Run pipeline pattern smoke tests
+        run: python3 pipelines/smoke/pattern_smoke.py
+
       - name: Validate Helm chart base
         run: |
           helm lint ./helm/modern-data-stack

@@ -5,21 +5,19 @@ import com.modern.enterprise.workflowapi.config.AppConfigProperties;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
 import org.springframework.stereotype.Service;
 
 @Service
-public class CiService {
+public class CiService extends HttpServiceClient {
   private final AppConfigProperties.Github cfg;
-  private final HttpClient httpClient;
   private final ObjectMapper mapper = new ObjectMapper();
 
   public CiService(AppConfigProperties props, HttpClient httpClient) {
+    super(httpClient);
     this.cfg = props.getGithub();
-    this.httpClient = httpClient;
   }
 
   public String triggerWorkflow(String wf, String branch) throws Exception {
@@ -34,11 +32,7 @@ public class CiService {
         .timeout(Duration.ofSeconds(30))
         .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
         .build();
-    HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
-    if (resp.statusCode() >= 300) {
-      // Preserve upstream body for GitHub API diagnostics (permissions, workflow name, branch).
-      throw new IllegalStateException("GitHub workflow trigger failed: " + resp.statusCode() + " " + resp.body());
-    }
-    return resp.body();
+    // Preserve upstream body for GitHub API diagnostics (permissions, workflow name, branch).
+    return executeOrThrow(req, "GitHub workflow trigger");
   }
 }

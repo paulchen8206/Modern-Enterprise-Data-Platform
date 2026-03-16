@@ -10,6 +10,7 @@ import feast
 import pandas as pd
 import numpy as np
 import os
+from abc import ABC, abstractmethod
 from kafka import KafkaConsumer
 import json
 from pyspark.sql import SparkSession
@@ -47,6 +48,33 @@ schema = StructType(
 )
 
 
+class RollingFeatureStrategy(ABC):
+    """Strategy interface for computing rolling feature values."""
+
+    @abstractmethod
+    def next_average(self, existing_avg, reading_value):
+        pass
+
+    @abstractmethod
+    def next_max(self, existing_max, reading_value):
+        pass
+
+
+class MeanMaxRollingStrategy(RollingFeatureStrategy):
+    """Default averaging and max strategy for online feature updates."""
+
+    def next_average(self, existing_avg, reading_value):
+        safe_avg = existing_avg if existing_avg is not None else 0
+        return (safe_avg + reading_value) / 2
+
+    def next_max(self, existing_max, reading_value):
+        safe_max = existing_max if existing_max is not None else 0
+        return max(safe_max, reading_value)
+
+
+rolling_feature_strategy = MeanMaxRollingStrategy()
+
+
 # ---------------------------
 # FUNCTION: STREAM DATA & STORE FEATURES
 # ---------------------------
@@ -76,12 +104,12 @@ def consume_kafka_and_store_features():
             entity_rows=[{"device_id": device_id}],
         ).to_dict()
 
-        # Compute updated features
-        avg_reading = (
-            existing_features["device_features:avg_reading"][0] or 0 + reading_value
-        ) / 2
-        max_reading = max(
-            existing_features["device_features:max_reading"][0] or 0, reading_value
+        # Compute updated features via pluggable rolling strategy.
+        avg_reading = rolling_feature_strategy.next_average(
+            existing_features["device_features:avg_reading"][0], reading_value
+        )
+        max_reading = rolling_feature_strategy.next_max(
+            existing_features["device_features:max_reading"][0], reading_value
         )
 
         # Prepare DataFrame for Feast ingestion

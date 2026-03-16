@@ -4,20 +4,18 @@ import com.modern.enterprise.workflowapi.config.AppConfigProperties;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Base64;
 import org.springframework.stereotype.Service;
 
 @Service
-public class AtlasService {
+public class AtlasService extends HttpServiceClient {
   private final AppConfigProperties.Atlas cfg;
-  private final HttpClient httpClient;
 
   public AtlasService(AppConfigProperties props, HttpClient httpClient) {
+    super(httpClient);
     this.cfg = props.getAtlas();
-    this.httpClient = httpClient;
   }
 
   public String registerLineage(String payload) throws Exception {
@@ -29,12 +27,8 @@ public class AtlasService {
         .timeout(Duration.ofSeconds(30))
         .POST(HttpRequest.BodyPublishers.ofString(payload, StandardCharsets.UTF_8))
         .build();
-    HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
-    if (resp.statusCode() >= 300) {
-      // Bubble up response details for easier operator troubleshooting.
-      throw new IllegalStateException("Atlas request failed: " + resp.statusCode() + " " + resp.body());
-    }
-    return resp.body();
+    // Bubble up response details for easier operator troubleshooting.
+    return executeOrThrow(req, "Atlas");
   }
 
   private String basicAuth() {

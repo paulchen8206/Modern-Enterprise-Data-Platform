@@ -40,6 +40,18 @@ mvn clean package
 - `POST /api/ci/trigger`
 - `GET /api/monitor/health`
 
+## Design Pattern Guide
+
+See `DESIGN_PATTERNS.md` for the high-level architecture pattern catalog and extension guidelines.
+
+- Layered architecture: controllers map transport concerns, services hold orchestration and integration logic.
+- Dependency Injection: Spring-managed constructor injection is used across controllers/services for testability.
+- Template Method (outbound HTTP): `HttpServiceClient` centralizes HTTP execution, status handling, and reachability checks while concrete services build endpoint-specific requests.
+- Exception hierarchy: `IntegrationException` + specialized types (`UpstreamServiceException`, `IntegrationConnectivityException`) standardize dependency failure semantics.
+- Problem response codes: dependency failures include `code` with values `INTEGRATION_UPSTREAM_ERROR` or `INTEGRATION_CONNECTIVITY_ERROR` for client-side branching.
+- Facade-like orchestration at service layer: each service (`AirflowService`, `CiService`, `MlflowService`, `AtlasService`) wraps one external platform behind a narrow API.
+- Strategy-ready health checks: `MonitoringService` composes dependency probes from each service and can be extended with additional probe strategies.
+
 ## Component Procedures
 
 ### Batch component
