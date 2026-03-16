@@ -29,7 +29,7 @@ SEED_DEMO_DATA_PY ?= import os,boto3; endpoint=os.getenv("MINIO_ENDPOINT","http:
 	run-kafka-producer run-streaming-job run-batch-job run-iceberg-demo prepare-demo-data \
 	run-java-api-local run-java-api-compose run-java-api-local-safe \
 	build-java-api-container run-java-api-container stop-java-api-container logs-java-api-container \
-	run-web run-wiki \
+	run-web run-wiki run-devtools \
 	kind-up kind-deploy kind-status kind-smoke kind-down \
 	hybrid-up hybrid-status hybrid-down
 
@@ -161,8 +161,11 @@ logs-java-api-container: ## Tail Java API container logs
 run-wiki: ## Run local wiki server (override port: make run-wiki WIKI_PORT=3000)
 	$(PYTHON) devtools/serve_wiki.py $(WIKI_PORT)
 
-run-web: ## Run static web app from ./web (override port: make run-web WEB_PORT=3000)
-	$(PYTHON) -m http.server $(WEB_PORT) --directory web
+run-devtools: run-wiki ## Alias to run local devtools wiki server
+
+run-web: ## Run local web + docs server (open /web/index.html; override port with WEB_PORT)
+	@echo "Open http://localhost:$(WEB_PORT)/web/index.html"
+	$(PYTHON) -m http.server $(WEB_PORT)
 
 kind-up: ## Create local kind cluster for Kubernetes deployment
 	$(KIND) create cluster --name $(KIND_CLUSTER) --config k8s/kind/cluster-config.yaml

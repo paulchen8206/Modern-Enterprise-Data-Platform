@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Enterprise-grade Modern Data Stack with batch and streaming processing using Apache Spark, Kafka, Airflow, and cloud-native data technologies."
+      content="Enterprise-grade Modern Enterprise Data Platform with batch and streaming processing using Apache Spark, Kafka, Airflow, and cloud-native data technologies."
     />
     <meta
       name="keywords"
@@ -14,7 +14,7 @@
     <meta name="author" content="paulchen8206@github" />
     <meta
       property="og:title"
-      content="Modern Data Stack - Enterprise Data Engineering Platform"
+      content="Modern Enterprise Data Platform - Enterprise Data Engineering Platform"
     />
     <meta
       property="og:description"
@@ -23,9 +23,9 @@
     <meta property="og:type" content="website" />
     <meta
       property="og:url"
-      content="https://github.com/paulchen8206/Modern-Enterprise-Data-Stack"
+      content="https://github.com/paulchen8206/Modern-Enterprise-Data-Platform"
     />
-    <title>Modern Data Stack - Enterprise Data Engineering Platform</title>
+    <title>Modern Enterprise Data Platform - Enterprise Data Engineering Platform</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -53,7 +53,7 @@
       <nav class="nav-container">
         <div class="logo">
           <span class="logo-icon">🚀</span>
-          <span>Modern Data Stack</span>
+          <span>Modern Enterprise Data Platform</span>
         </div>
         <ul class="nav-menu">
           <li><a href="#overview" class="nav-link">Overview</a></li>
@@ -64,7 +64,7 @@
           <li><a href="#getting-started" class="nav-link">Get Started</a></li>
           <li>
             <a
-              href="https://github.com/paulchen8206/Modern-Enterprise-Data-Stack"
+              href="https://github.com/paulchen8206/Modern-Enterprise-Data-Platform"
               class="cta-button"
               >GitHub</a
             >
@@ -78,7 +78,7 @@
     <!-- Hero Section -->
     <section class="hero">
       <div class="hero-content">
-        <h1 class="hero-title">Modern Data Stack</h1>
+        <h1 class="hero-title">Modern Enterprise Data Platform</h1>
         <p class="hero-subtitle">
           Enterprise-grade data engineering platform with batch & streaming
           processing, comprehensive monitoring, data governance, and ML
@@ -97,7 +97,7 @@
         <div class="hero-actions">
           <a href="#getting-started" class="btn-primary"> 🚀 Get Started </a>
           <a
-            href="https://github.com/paulchen8206/Modern-Enterprise-Data-Stack"
+            href="https://github.com/paulchen8206/Modern-Enterprise-Data-Platform"
             class="btn-secondary"
           >
             📖 View on GitHub
@@ -176,8 +176,8 @@
           <h3 class="feature-title">Monitoring & Governance</h3>
           <p class="feature-description">
             <strong>Observability:</strong> Prometheus for metrics, Grafana for
-            dashboards, ELK stack for logs<br /><br />
-            <strong>Governance:</strong> Apache Atlas/OpenMetadata for lineage,
+            dashboards, and ServiceMonitors for Kubernetes scraping<br /><br />
+            <strong>Governance:</strong> Apache Atlas lineage integration with
             Great Expectations for quality
           </p>
         </div>
@@ -203,7 +203,7 @@
             <strong>Container Orchestration:</strong> Kubernetes with Helm
             charts<br /><br />
             <strong>IaC:</strong> Terraform for cloud infrastructure<br /><br />
-            <strong>Strategies:</strong> Blue/Green, Canary, Rolling deployments
+            <strong>Strategies:</strong> Blue/Green and Canary deployments
           </p>
         </div>
       </div>
@@ -317,8 +317,8 @@
               <li class="tech-item">
                 ⚡ Apache Spark - Batch & Stream Processing
               </li>
-              <li class="tech-item">🌊 Apache Flink - Low-latency Streaming</li>
-              <li class="tech-item">🔧 dbt - SQL Transformations</li>
+              <li class="tech-item">🌊 Spark Structured Streaming - Real-time pipelines</li>
+              <li class="tech-item">🐍 Python ETL Jobs - Pipeline orchestration code</li>
             </ul>
           </div>
 
@@ -359,8 +359,8 @@
             <ul class="tech-list">
               <li class="tech-item">🔥 Prometheus - Metrics Collection</li>
               <li class="tech-item">📈 Grafana - Visualization & Dashboards</li>
-              <li class="tech-item">📋 ELK Stack - Log Management</li>
-              <li class="tech-item">🔍 Jaeger - Distributed Tracing</li>
+              <li class="tech-item">📡 ServiceMonitors - Kubernetes metrics scraping</li>
+              <li class="tech-item">🚨 Alert rules - Rollout analysis and health checks</li>
             </ul>
           </div>
 
@@ -369,7 +369,7 @@
             <ul class="tech-list">
               <li class="tech-item">🔬 MLflow - Experiment Tracking</li>
               <li class="tech-item">🍱 Feast - Feature Store</li>
-              <li class="tech-item">🧠 TensorFlow/PyTorch - Model Training</li>
+              <li class="tech-item">📓 Notebook workflows - Feature and model prototyping</li>
             </ul>
           </div>
 
@@ -386,8 +386,8 @@
             <h3 class="tech-category-title">🛡️ Governance</h3>
             <ul class="tech-list">
               <li class="tech-item">🗺️ Apache Atlas - Data Lineage</li>
-              <li class="tech-item">📚 OpenMetadata - Data Catalog</li>
-              <li class="tech-item">🔒 Policy & Compliance Management</li>
+              <li class="tech-item">✅ Great Expectations - Data quality policy checks</li>
+              <li class="tech-item">🔒 Governance stubs - Catalog and lineage integration points</li>
             </ul>
           </div>
         </div>
@@ -675,8 +675,8 @@
                     📋 Copy
                   </button>
                 </div>
-                <pre><code>git clone https://github.com/paulchen8206/Modern-Enterprise-Data-Stack.git
-cd Modern-Enterprise-Data-Stack</code></pre>
+                <pre><code>git clone https://github.com/paulchen8206/Modern-Enterprise-Data-Platform.git
+cd Modern-Enterprise-Data-Platform</code></pre>
               </div>
             </div>
           </div>
@@ -697,7 +697,8 @@ cd Modern-Enterprise-Data-Stack</code></pre>
                     📋 Copy
                   </button>
                 </div>
-                <pre><code>docker-compose up --build</code></pre>
+                <pre><code>make up
+make ps</code></pre>
               </div>
             </div>
           </div>
@@ -767,9 +768,9 @@ cd Modern-Enterprise-Data-Stack</code></pre>
                     📋 Copy
                   </button>
                 </div>
-                <pre><code># In Airflow UI, enable batch_ingestion_dag
-# Or trigger via CLI:
-docker-compose exec airflow airflow dags trigger batch_ingestion_dag</code></pre>
+                <pre><code># In Airflow UI, enable and trigger batch_ingestion_dag
+# Or trigger from CLI (see docs/LOCAL_RUNTIME.md)
+make up</code></pre>
               </div>
             </div>
           </div>
@@ -790,11 +791,10 @@ docker-compose exec airflow airflow dags trigger batch_ingestion_dag</code></pre
                   </button>
                 </div>
                 <pre><code># Start Kafka producer
-docker-compose exec kafka python /opt/spark_jobs/../kafka/producer.py
+make run-kafka-producer
 
 # Run Spark streaming job
-docker-compose exec spark spark-submit --master local[2] \
-  /opt/spark_jobs/spark_streaming_job.py</code></pre>
+make run-streaming-job</code></pre>
               </div>
             </div>
           </div>
@@ -814,14 +814,12 @@ docker-compose exec spark spark-submit --master local[2] \
                     📋 Copy
                   </button>
                 </div>
-                <pre><code># Apply Kubernetes manifests
-kubectl apply -f k8s/
+                <pre><code># Deploy local stack on Kind
+make kind-deploy
+make kind-status
 
-# Setup Argo CD
-kubectl apply -f k8s/argo-app.yaml
-
-# Deploy with Terraform (for cloud infrastructure)
-cd terraform
+# Provision cloud infrastructure (optional)
+cd iac
 terraform init
 terraform apply</code></pre>
               </div>
@@ -845,7 +843,7 @@ terraform apply</code></pre>
         <ul style="list-style: none; color: var(--text-secondary)">
           <li style="padding: 0.5rem 0">
             📖
-            <a href="/wiki?doc=README.md" style="color: var(--primary-color)"
+            <a href="/README.md" style="color: var(--primary-color)"
               >Comprehensive README</a
             >
             - Detailed documentation
@@ -853,7 +851,7 @@ terraform apply</code></pre>
           <li style="padding: 0.5rem 0">
             🏗️
             <a
-              href="/wiki?doc=docs/ARCHITECTURE.md"
+              href="/docs/ARCHITECTURE.md"
               style="color: var(--primary-color)"
               >Architecture Guide</a
             >
@@ -862,7 +860,7 @@ terraform apply</code></pre>
           <li style="padding: 0.5rem 0">
             🚀
             <a
-              href="/wiki?doc=docs/QUICK_START.md"
+              href="/docs/QUICK_START.md"
               style="color: var(--primary-color)"
               >Quick Start Guide</a
             >
@@ -871,7 +869,7 @@ terraform apply</code></pre>
           <li style="padding: 0.5rem 0">
             📋
             <a
-              href="/wiki?doc=docs/DEPLOYMENT.md"
+              href="/docs/DEPLOYMENT.md"
               style="color: var(--primary-color)"
               >Deployment Strategies</a
             >
@@ -880,7 +878,7 @@ terraform apply</code></pre>
           <li style="padding: 0.5rem 0">
             📓
             <a
-              href="https://github.com/paulchen8206/Modern-Enterprise-Data-Stack/blob/main/notebooks/modern-data-stack.ipynb"
+              href="/notebooks/modern-data-stack.ipynb"
               style="color: var(--primary-color)"
               >Jupyter Notebook</a
             >
@@ -908,7 +906,7 @@ terraform apply</code></pre>
           </p>
           <div class="social-links">
             <a
-              href="https://github.com/paulchen8206/Modern-Enterprise-Data-Stack"
+              href="https://github.com/paulchen8206/Modern-Enterprise-Data-Platform"
               class="social-link"
               title="GitHub"
             >
@@ -942,20 +940,20 @@ terraform apply</code></pre>
           <h3>Documentation</h3>
           <ul class="footer-links">
             <li>
-              <a href="/wiki?doc=README.md">README</a>
+              <a href="/README.md">README</a>
             </li>
             <li>
-              <a href="/wiki?doc=docs/ARCHITECTURE.md">Architecture Guide</a>
+              <a href="/docs/ARCHITECTURE.md">Architecture Guide</a>
             </li>
             <li>
-              <a href="/wiki?doc=docs/QUICK_START.md">Quick Start</a>
+              <a href="/docs/QUICK_START.md">Quick Start</a>
             </li>
             <li>
-              <a href="/wiki?doc=docs/DEPLOYMENT.md">Deployment Strategies</a>
+              <a href="/docs/DEPLOYMENT.md">Deployment Strategies</a>
             </li>
             <li>
               <a
-                href="https://github.com/paulchen8206/Modern-Enterprise-Data-Stack/blob/main/notebooks/modern-data-stack.ipynb"
+                href="/notebooks/modern-data-stack.ipynb"
                 >Jupyter Notebook</a
               >
             </li>
@@ -977,7 +975,7 @@ terraform apply</code></pre>
 
       <div class="footer-bottom">
         <p>
-          &copy; 2025 Modern Data Stack. Licensed under
+          &copy; 2026 Modern Enterprise Data Platform. Licensed under
           <a href="../LICENSE" style="color: var(--primary-color)"
             >MIT License</a
           >.

@@ -365,7 +365,7 @@ window.addEventListener("load", () => {
 
 // Console message
 console.log(
-  "%c🚀 Modern Data Stack Wiki",
+  "%c🚀 Modern Enterprise Data Platform Wiki",
   "font-size: 20px; font-weight: bold; color: #4facfe;",
 );
 console.log(
@@ -373,6 +373,6 @@ console.log(
   "font-size: 12px; color: #cbd5e1;",
 );
 console.log(
-  "%cGitHub: https://github.com/paulchen8206/Modern-Enterprise-Data-Stack",
+  "%cGitHub: https://github.com/paulchen8206/Modern-Enterprise-Data-Platform",
   "font-size: 12px; color: #7c3aed;",
 );
