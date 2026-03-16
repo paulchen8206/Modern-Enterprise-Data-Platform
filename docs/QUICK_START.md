@@ -12,7 +12,7 @@ This guide is the fast entry point for the repository. It keeps only the minimum
 ## Source-of-Truth Docs
 
 - Platform architecture: `docs/ARCHITECTURE.md`
-- Local runtime procedures and diagrams: `RUNBOOK.md`
+- Local runtime procedures and diagrams: `docs/LOCAL_RUNTIME.md`
 - Rollout strategy, analysis, rollback, and troubleshooting: `docs/DEPLOYMENT.md`
 - Kind-specific implementation details: `k8s/kind/README.md`
 - Container and compose ownership: `infra/README.md`
@@ -53,7 +53,7 @@ curl -sS http://localhost:8081/actuator/health
 curl -sS http://localhost:8081/api/monitor/health
 ```
 
-For full runtime procedures, service-specific checks, and troubleshooting, use `RUNBOOK.md`.
+For full runtime procedures, service-specific checks, and troubleshooting, use `docs/LOCAL_RUNTIME.md`.
 
 ### Local Kubernetes Validation With Kind
 
@@ -72,7 +72,7 @@ make hybrid-up
 make hybrid-status
 ```
 
-For topology, endpoints, and Kind implementation detail, use `k8s/kind/README.md` and `RUNBOOK.md`.
+For topology, endpoints, and Kind implementation detail, use `k8s/kind/README.md` and `docs/LOCAL_RUNTIME.md`.
 
 ### Progressive Delivery Shortcuts
 
@@ -107,6 +107,6 @@ For manual rollout steps, analysis templates, dashboard access, rollback procedu
 
 ## Next Reading
 
-1. Read `RUNBOOK.md` if you need local runtime setup, teardown, or service checks.
+1. Read `docs/LOCAL_RUNTIME.md` if you need local runtime setup, teardown, or service checks.
 1. Read `docs/DEPLOYMENT.md` if you need rollout mechanics, rollback, dashboards, or troubleshooting.
 1. Read `docs/ARCHITECTURE.md` if you need platform topology or environment context.

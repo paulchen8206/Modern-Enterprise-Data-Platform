@@ -84,7 +84,7 @@ flowchart TB
 
 Deployment strategy documentation no longer duplicates local runtime topology.
 
-- Use `RUNBOOK.md` for Compose, Kind, hybrid, and Java API runtime diagrams.
+- Use `docs/LOCAL_RUNTIME.md` for Compose, Kind, hybrid, and Java API runtime diagrams.
 - Use `infra/README.md` for compose file ownership, build contexts, and container layout.
 - Use this document for rollout strategies, analysis flow, promotion, and rollback mechanics.
 

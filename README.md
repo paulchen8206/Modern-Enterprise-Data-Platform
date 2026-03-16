@@ -42,10 +42,10 @@ Use `Makefile` targets to standardize daily operations:
 ## Documentation Hub
 
 - Getting started: `docs/QUICK_START.md`
-- Local development workflow: `RUNBOOK.md`
+- Local development workflow: `docs/LOCAL_RUNTIME.md`
 - System design details: `docs/ARCHITECTURE.md`
 - Progressive delivery patterns: `docs/DEPLOYMENT.md`
-- Iceberg table format usage: `docs/ICEBERG.md`
+- Iceberg table format usage: `docs/DATA_LAKEHOUSE.md`
 - AWS Well-Architected best practices: `docs/AWS_WELL_ARCHITECTED.md`
 - Infra container layout: `infra/README.md`
 - Java orchestration API: `java-api/README.md`
@@ -290,7 +290,7 @@ Best practices:
 1. [Contributing](#contributing)
 1. [License](#license)
 1. [Final Notes](#final-notes)
-1. [Iceberg Tables Guide](docs/ICEBERG.md)
+1. [Iceberg / Data Lakehouse Guide](docs/DATA_LAKEHOUSE.md)
 
 ## Make Procedures
 
@@ -401,7 +401,7 @@ Use these source-of-truth docs:
 
 - Platform architecture and code-reviewed alignment: `docs/ARCHITECTURE.md`
 - Progressive delivery and rollout flows: `docs/DEPLOYMENT.md`
-- Local runtime and container topology: `infra/README.md` and `RUNBOOK.md`
+- Local runtime and container topology: `infra/README.md` and `docs/LOCAL_RUNTIME.md`
 - Java API pattern interactions: `java-api/DESIGN_PATTERNS.md`
 - Pipeline pattern topology and smoke harness: `pipelines/DESIGN_PATTERNS.md`
 
@@ -409,7 +409,7 @@ Recommended reading order:
 
 1. `docs/ARCHITECTURE.md` for system context and platform diagrams.
 1. `docs/DEPLOYMENT.md` for rollout and delivery diagrams.
-1. `RUNBOOK.md` for local runtime modes and operational procedures.
+1. `docs/LOCAL_RUNTIME.md` for local runtime modes and operational procedures.
 1. `java-api/DESIGN_PATTERNS.md` and `pipelines/DESIGN_PATTERNS.md` for code-level design changes.
 
 ## Directory Structure
@@ -417,7 +417,7 @@ Recommended reading order:
 ```text
 modern-enterprise-data-stack/
   ├── README.md
-  ├── RUNBOOK.md
+  ├── docs/LOCAL_RUNTIME.md
   ├── Makefile
   ├── .github/
   │   └── workflows/
@@ -428,7 +428,7 @@ modern-enterprise-data-stack/
   │   ├── QUICK_START.md
   │   ├── ARCHITECTURE.md
   │   ├── DEPLOYMENT.md
-  │   └── ICEBERG.md
+  │   └── DATA_LAKEHOUSE.md
   ├── pipelines/
   │   ├── airflow/
   │   ├── spark/

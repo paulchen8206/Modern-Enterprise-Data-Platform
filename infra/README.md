@@ -35,7 +35,7 @@ This folder centralizes container definitions for the Modern Data Stack.
 ## Ownership Boundaries
 
 - Use this document for compose file ownership, image build paths, and container inventory.
-- Use `RUNBOOK.md` for startup, shutdown, health checks, and local troubleshooting procedures.
+- Use `docs/LOCAL_RUNTIME.md` for startup, shutdown, health checks, and local troubleshooting procedures.
 - Use `docs/DEPLOYMENT.md` for rollout strategy, promotion, and rollback flows.
 
 ## Build and Path Conventions
@@ -53,4 +53,4 @@ This folder centralizes container definitions for the Modern Data Stack.
 - `compose/docker-compose.ci.yaml` defines a smaller CI-oriented stack (`airflow`, `kafka`, `spark`, `mongodb`, `hadoop`, `influxdb`).
 - The CI compose file currently references local build contexts (`./airflow`, `./kafka`, `./spark`, `./hadoop`) and should be treated as separate from the default local runtime topology.
 
-For compose validation and day-to-day verification commands, follow `RUNBOOK.md`.
+For compose validation and day-to-day verification commands, follow `docs/LOCAL_RUNTIME.md`.
