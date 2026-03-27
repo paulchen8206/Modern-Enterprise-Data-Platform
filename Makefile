@@ -9,8 +9,17 @@ WIKI_PORT ?= 8000
 WEB_PORT ?= 8080
 KIND ?= kind
 KUBECTL ?= kubectl
+HELM ?= helm
 KIND_CLUSTER ?= modern-data-stack
 KIND_NAMESPACE ?= data-stack-local
+HELM_CHART ?= helm/modern-data-stack
+HELM_ENV ?= qa
+HELM_NAMESPACE_PREFIX ?= data-stack
+HELM_RELEASE_PREFIX ?= modern-data-stack
+HELM_NAMESPACE ?= $(HELM_NAMESPACE_PREFIX)-$(HELM_ENV)
+HELM_RELEASE ?= $(HELM_RELEASE_PREFIX)-$(HELM_ENV)
+HELM_VALUES ?= $(HELM_CHART)/values-$(HELM_ENV).yaml
+HELM_REVISION ?= 1
 WORKFLOW_API_PORT_START ?= 8081
 WORKFLOW_API_PORT_END ?= 8099
 HYBRID_SUPPORT_SERVICES ?= postgres-conduktor conduktor
@@ -26,6 +35,10 @@ SEED_DEMO_DATA_PY ?= import os,boto3; endpoint=os.getenv("MINIO_ENDPOINT","http:
 	format format-python format-text terraform-fmt \
 	validate validate-compose validate-shell validate-python validate-json validate-yaml validate-notebook validate-format validate-terraform \
 	terraform-init terraform-validate \
+	helm-lint helm-check-all helm-template helm-template-qa helm-template-stg helm-template-prd \
+	helm-deploy helm-deploy-qa helm-deploy-stg helm-deploy-prd \
+	helm-status helm-history helm-rollback helm-uninstall \
+	helm-rollback-qa helm-rollback-stg helm-rollback-prd \
 	run-kafka-producer run-streaming-job run-batch-job run-iceberg-demo prepare-demo-data \
 	run-java-api-local run-java-api-compose run-java-api-local-safe \
 	build-java-api-container run-java-api-container stop-java-api-container logs-java-api-container \
@@ -110,6 +123,70 @@ terraform-init: ## Initialize Terraform providers/modules
 terraform-validate: ## Validate Terraform only
 	$(TERRAFORM) -chdir=iac init -backend=false -input=false >/dev/null
 	$(TERRAFORM) -chdir=iac validate
+
+helm-lint: ## Lint in-repo Helm chart
+	$(HELM) lint $(HELM_CHART)
+
+helm-check-all: ## Lint chart and render qa/stg/prd templates
+	$(MAKE) helm-lint
+	$(MAKE) helm-template-qa >/dev/null
+	$(MAKE) helm-template-stg >/dev/null
+	$(MAKE) helm-template-prd >/dev/null
+	@echo "Helm lint and template checks passed for qa/stg/prd."
+
+helm-template: ## Render Helm chart for HELM_ENV (default qa)
+	$(HELM) template $(HELM_RELEASE) $(HELM_CHART) \
+		--namespace $(HELM_NAMESPACE) \
+		-f $(HELM_CHART)/values.yaml \
+		-f $(HELM_VALUES)
+
+helm-template-qa: ## Render Helm chart for qa environment
+	$(MAKE) helm-template HELM_ENV=qa
+
+helm-template-stg: ## Render Helm chart for stg environment
+	$(MAKE) helm-template HELM_ENV=stg
+
+helm-template-prd: ## Render Helm chart for prd environment
+	$(MAKE) helm-template HELM_ENV=prd
+
+helm-deploy: ## Install/upgrade Helm release for HELM_ENV (default qa)
+	$(HELM) upgrade --install $(HELM_RELEASE) $(HELM_CHART) \
+		--namespace $(HELM_NAMESPACE) \
+		--create-namespace \
+		-f $(HELM_CHART)/values.yaml \
+		-f $(HELM_VALUES) \
+		--wait \
+		--timeout 10m
+
+helm-deploy-qa: ## Install/upgrade Helm release for qa environment
+	$(MAKE) helm-deploy HELM_ENV=qa
+
+helm-deploy-stg: ## Install/upgrade Helm release for stg environment
+	$(MAKE) helm-deploy HELM_ENV=stg
+
+helm-deploy-prd: ## Install/upgrade Helm release for prd environment
+	$(MAKE) helm-deploy HELM_ENV=prd
+
+helm-status: ## Show Helm release status for HELM_ENV (default qa)
+	$(HELM) status $(HELM_RELEASE) -n $(HELM_NAMESPACE)
+
+helm-history: ## Show Helm release history for HELM_ENV (default qa)
+	$(HELM) history $(HELM_RELEASE) -n $(HELM_NAMESPACE)
+
+helm-rollback: ## Roll back Helm release to HELM_REVISION for HELM_ENV
+	$(HELM) rollback $(HELM_RELEASE) $(HELM_REVISION) -n $(HELM_NAMESPACE) --wait --timeout 10m
+
+helm-rollback-qa: ## Roll back qa Helm release to HELM_REVISION
+	$(MAKE) helm-rollback HELM_ENV=qa
+
+helm-rollback-stg: ## Roll back stg Helm release to HELM_REVISION
+	$(MAKE) helm-rollback HELM_ENV=stg
+
+helm-rollback-prd: ## Roll back prd Helm release to HELM_REVISION
+	$(MAKE) helm-rollback HELM_ENV=prd
+
+helm-uninstall: ## Uninstall Helm release for HELM_ENV (default qa)
+	$(HELM) uninstall $(HELM_RELEASE) -n $(HELM_NAMESPACE)
 
 run-java-api-local: ## Run Java API from repo root using local profile
 	mvn -f java-api/pom.xml spring-boot:run -Dspring-boot.run.profiles=local -DskipTests
